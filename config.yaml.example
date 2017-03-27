@@ -1,0 +1,7 @@
+gitlab:
+  project: project_short_name
+  token: gitlab_api_private_token
+  endpoint: gitlab_api_endpoint
+
+slack:
+  token: slack_api_private_token
