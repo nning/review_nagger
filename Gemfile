@@ -1,4 +1,4 @@
 source 'https://rubygems.org'
 
-gem 'gitlab'
-gem 'slack-ruby-bot'
+gem 'httparty'
+gem 'slack-ruby-client'

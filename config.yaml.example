@@ -5,3 +5,5 @@ gitlab:
 
 slack:
   token: slack_api_private_token
+  channels:
+    - bots
