@@ -20,3 +20,7 @@ end
 AppConfig.instance
   .load_file('config.yaml')
   .define_constants!
+
+Slack.configure do |config|
+  config.token = AppConfig::SLACK_TOKEN
+end
