@@ -1,4 +1,5 @@
 require 'httparty'
+require 'rufus-scheduler'
 require 'singleton'
 require 'slack-ruby-client'
 

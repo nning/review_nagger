@@ -3,4 +3,11 @@
 $:.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
 require 'review_nagger'
 
-Nagger.new.run!
+nagger = Nagger.new
+scheduler = Rufus::Scheduler.new
+
+scheduler.cron '0 9 * * 1-5' do
+  nagger.run!
+end
+
+scheduler.join
