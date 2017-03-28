@@ -10,12 +10,23 @@ class Nagger
 
   def run!
     todo = get_todo(get_merge_requests)
-    notify_slack!(todo)
+    message = get_message(todo)
+
+    if !message
+      $stdout << "No pending reviews\n"
+      return
+    end
+
+    $stdout << "Notifying #%s about pending reviews\n" % [
+      AppConfig::SLACK_CHANNEL
+    ]
+
+    notify_slack!(message)
   end
 
   def get_merge_requests
     merge_requests = @gitlab.filtered_merge_requests
-    raise if !merge_requests || !merge_requests.any?
+    return [] if !merge_requests || !merge_requests.any?
     merge_requests
   end
 
@@ -47,22 +58,26 @@ class Nagger
     todo.map { |t| t[:url] + ' (%s)' % t[:jira] }.join($/)
   end
 
-  def notify_slack!(todo)
+  def get_message(todo)
+    return if todo.empty?
+
     message = '@channel *TODOs*'
 
-    ['robot', 'art'].each do |type|
+    %w[robot art].each do |type|
       next unless todo_of_type(todo, type).any?
 
       message << $/ + ICONS[type.to_sym] + $/
       message << format_todo(todo_of_type(todo, type))
     end
 
-    AppConfig::SLACK_CHANNELS.each do |channel|
-      @slack.chat_postMessage \
-        channel: '#%s' % channel,
-        text: message,
-        as_user: true,
-        parse: 'full'
-    end
+    message
+  end
+
+  def notify_slack!(message)
+    @slack.chat_postMessage \
+      channel: '#%s' % AppConfig::SLACK_CHANNEL,
+      text: message,
+      as_user: true,
+      parse: 'full'
   end
 end

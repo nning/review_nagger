@@ -15,4 +15,8 @@ scheduler.cron '0 9 * * 1-5' do
   nagger.run!
 end
 
+scheduler.cron '0 13 * * 1-5' do
+  nagger.run!
+end
+
 scheduler.join
