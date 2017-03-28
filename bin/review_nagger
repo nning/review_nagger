@@ -1,0 +1,41 @@
+#!/usr/bin/env ruby
+
+$:.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
+require 'review_nagger'
+
+todo = []
+
+client = Client.new
+merge_requests = client.filtered_merge_requests
+
+exit if !merge_requests || !merge_requests.any?
+
+merge_requests.each do |merge_request|
+  todo << {
+    title: merge_request['title'],
+    url: merge_request['web_url'],
+    missing: client.missing_reviews(merge_request),
+    jira: jira_handle(merge_request['title'])
+  }
+end
+
+slack = Slack::Web::Client.new
+slack.auth_test
+
+message = '@channel *TODOs*'
+
+['robot', 'art'].each do |type|
+  next unless todo_of_type(todo, type).any?
+
+  message << $/ + ICONS[type.to_sym] + $/
+  message << todo_of_type(todo, type)
+    .map { |t| t[:url] + ' (%s)' % t[:jira] }.join($/)
+end
+
+AppConfig::SLACK_CHANNELS.each do |channel|
+  slack.chat_postMessage \
+    channel: '#%s' % channel,
+    text: message,
+    as_user: true,
+    parse: 'full'
+end

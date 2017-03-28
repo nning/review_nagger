@@ -1,39 +1,10 @@
-require 'httparty'
-require 'singleton'
-require 'slack-ruby-client'
-
-class AppConfig < Hash
-  include Singleton
-
-  def load_file(path)
-    self.merge!(YAML.load_file(File.join(File.dirname(__FILE__), path)))
-    self
-  end
-
-  def define_constants!
-    self.each do |k1, v1|
-      v1.each do |k2, v2|
-        name = [k1, k2].map(&:upcase).join('_')
-        Object.const_set(name, v2)
-      end
-    end
-  end
-end
-
-cfg = AppConfig.instance.load_file('config.yaml')
-cfg.define_constants!
-
-Slack.configure do |config|
-  config.token = SLACK_TOKEN
-end
-
 class Client
   include HTTParty
-  base_uri GITLAB_ENDPOINT
+  base_uri AppConfig::GITLAB_ENDPOINT
 
   OPTIONS = {
     headers: {
-      'PRIVATE-TOKEN': GITLAB_TOKEN
+      'PRIVATE-TOKEN': AppConfig::GITLAB_TOKEN
     }
   }
 
@@ -107,56 +78,10 @@ class Client
       projects = self.class.get('/projects', OPTIONS).parsed_response
 
       projects.each do |project|
-        if project['namespace']['name'] == GITLAB_PROJECT
+        if project['namespace']['name'] == AppConfig::GITLAB_PROJECT
           return project['id']
         end
       end
     end
   end
-end
-
-def jira_handle(title)
-  title.match(/([A-Z]*-[0-9]*):/)[1]
-rescue
-end
-
-def todo_of_type(todo, type)
-  todo.select { |t| t[:missing].include?(type) }
-end
-
-todo = []
-icons = {
-  robot: '🤖',
-  art: '🎨'
-}
-
-client = Client.new
-merge_requests = client.filtered_merge_requests
-
-exit if !merge_requests || !merge_requests.any?
-
-merge_requests.each do |merge_request|
-  todo << {
-    title: merge_request['title'],
-    url: merge_request['web_url'],
-    missing: client.missing_reviews(merge_request),
-    jira: jira_handle(merge_request['title'])
-  }
-end
-
-slack = Slack::Web::Client.new
-slack.auth_test
-
-message = "*TODOs*"
-
-['robot', 'art'].each do |type|
-  next unless todo_of_type(todo, type).any?
-
-  message << "\n" + icons[type.to_sym] + "\n"
-  message << todo_of_type(todo, type)
-    .map { |t| t[:url] + ' (%s)' % t[:jira] }.join("\n")
-end
-
-SLACK_CHANNELS.each do |channel|
-  slack.chat_postMessage(channel: '#%s' % channel, text: message)
 end
