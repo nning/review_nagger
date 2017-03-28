@@ -6,6 +6,11 @@ require 'review_nagger'
 nagger = Nagger.new
 scheduler = Rufus::Scheduler.new
 
+if ARGV[0] == '-n'
+  nagger.run!
+  exit
+end
+
 scheduler.cron '0 9 * * 1-5' do
   nagger.run!
 end
