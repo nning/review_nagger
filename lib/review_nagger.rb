@@ -5,5 +5,5 @@ require 'slack-ruby-client'
 
 $:.unshift(File.join(File.dirname(__FILE__), 'review_nagger'))
 require 'app_config'
-require 'client'
+require 'git_lab'
 require 'nagger'

@@ -2,7 +2,7 @@ class Nagger
   ICONS = { robot: '🤖', art: '🎨' }
 
   def initialize
-    @gitlab = Client.new
+    @gitlab = GitLab.new
 
     @slack = Slack::Web::Client.new
     @slack.auth_test

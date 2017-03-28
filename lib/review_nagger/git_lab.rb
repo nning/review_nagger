@@ -1,4 +1,4 @@
-class Client
+class GitLab
   include HTTParty
   base_uri AppConfig::GITLAB_ENDPOINT
 
@@ -34,34 +34,39 @@ class Client
     labels_include?(merge_request['labels'], 'wip')
   end
 
+  def necessary_votes(merge_request)
+    integration?(merge_request) ? 1 : 2
+  end
+
   def filtered_merge_requests
     merge_requests.select do |merge_request|
-      votes = integration?(merge_request) ? 1 : 2
-
       # Above upvote threshold
-      x = merge_request['upvotes'] < votes
+      x = merge_request['upvotes'] < necessary_votes(merge_request)
 
       # Not work in progress
-      x = x && !merge_request['work_in_progress']
-      x = x && !wip?(merge_request)
+      x &&= !merge_request['work_in_progress']
+      x &&= !wip?(merge_request)
 
       # Not stalled
-      x = x && !stalled?(merge_request)
+      x &&= !stalled?(merge_request)
 
       # In review
-      x = x && review?(merge_request)
+      x &&= review?(merge_request)
 
       # Not already merged
-      x = x && merge_request['status'] != 'merged'
+      x &&= merge_request['status'] != 'merged'
 
       x
     end
   end
 
   def awards(merge_request)
-    self.class
-      .get('/projects/%s/merge_requests/%s/award_emoji' % [project_id, merge_request['iid']], OPTIONS)
-      .parsed_response
+    path = '/projects/%s/merge_requests/%s/award_emoji' % [
+      project_id,
+      merge_request['iid']
+    ]
+
+    self.class.get(path, OPTIONS).parsed_response
   end
 
   def has_award?(awards, name)
@@ -69,8 +74,17 @@ class Client
   end
 
   def missing_reviews(merge_request)
-    awards = awards(merge_request)
-    ['robot', 'art'].select { |type| !has_award?(awards, type) }
+    %w[robot art].select do |type|
+      # Type has no awards
+      x = !has_award?(awards(merge_request), type)
+
+      # If type is art, review is missing, if more than 1 vote necessary
+      if type == 'art'
+        x &&= necessary_votes(merge_request) > 1
+      end
+
+      x
+    end
   end
 
   def project_id
