@@ -1,5 +1,4 @@
 require 'httparty'
-# require 'json'
 require 'singleton'
 require 'slack-ruby-client'
 
@@ -10,29 +9,31 @@ class AppConfig < Hash
     self.merge!(YAML.load_file(File.join(File.dirname(__FILE__), path)))
     self
   end
+
+  def define_constants!
+    self.each do |k1, v1|
+      v1.each do |k2, v2|
+        name = [k1, k2].map(&:upcase).join('_')
+        Object.const_set(name, v2)
+      end
+    end
+  end
 end
 
 cfg = AppConfig.instance.load_file('config.yaml')
-
-GITLAB_PROJECT = cfg['gitlab']['project']
-
-GITLAB_API_ENDPOINT = cfg['gitlab']['endpoint']
-GITLAB_API_PRIVATE_TOKEN = cfg['gitlab']['token']
-
-SLACK_API_TOKEN = cfg['slack']['token']
-SLACK_CHANNELS = cfg['slack']['channels']
+cfg.define_constants!
 
 Slack.configure do |config|
-  config.token = SLACK_API_TOKEN
+  config.token = SLACK_TOKEN
 end
 
 class Client
   include HTTParty
-  base_uri GITLAB_API_ENDPOINT
+  base_uri GITLAB_ENDPOINT
 
   OPTIONS = {
     headers: {
-      'PRIVATE-TOKEN': GITLAB_API_PRIVATE_TOKEN
+      'PRIVATE-TOKEN': GITLAB_TOKEN
     }
   }
 
@@ -58,6 +59,10 @@ class Client
     labels_include?(merge_request['labels'], 'interne review')
   end
 
+  def wip?(merge_request)
+    labels_include?(merge_request['labels'], 'wip')
+  end
+
   def filtered_merge_requests
     merge_requests.select do |merge_request|
       votes = integration?(merge_request) ? 1 : 2
@@ -67,6 +72,7 @@ class Client
 
       # Not work in progress
       x = x && !merge_request['work_in_progress']
+      x = x && !wip?(merge_request)
 
       # Not stalled
       x = x && !stalled?(merge_request)
