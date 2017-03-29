@@ -11,7 +11,7 @@ if ARGV[0] == '-n'
   exit
 end
 
-scheduler.cron '0 9 * * 1-5' do
+scheduler.cron '30 7 * * 1-5' do
   nagger.run!
 end
 
