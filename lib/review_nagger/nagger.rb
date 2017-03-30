@@ -1,5 +1,6 @@
 class Nagger
   ICONS = { robot: '🤖', art: '🎨' }
+  JIRA_REGEX = /([A-Z]*-[0-9]*)(:|\ )/
 
   def initialize
     @gitlab = GitLab.new
@@ -31,7 +32,7 @@ class Nagger
   end
 
   def jira_handle(title)
-    title.match(/([A-Z]*-[0-9]*):/)[1]
+    title.match(JIRA_REGEX)[1]
   rescue
   end
 
