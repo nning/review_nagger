@@ -62,7 +62,7 @@ class Nagger
   def get_message(todo)
     return if todo.empty?
 
-    message = '@channel *TODOs*'
+    message = '@here *TODOs*'
 
     %w[robot art].each do |type|
       next unless todo_of_type(todo, type).any?
