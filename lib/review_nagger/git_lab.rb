@@ -53,8 +53,8 @@ class GitLab
       # In review
       x &&= review?(merge_request)
 
-      # Not already merged
-      x &&= merge_request['status'] != 'merged'
+      # Not already merged or closed
+      x &&= !%w[merged closed].include?(merge_request['state'])
 
       x
     end
