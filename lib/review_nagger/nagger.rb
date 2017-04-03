@@ -1,6 +1,7 @@
 class Nagger
   ICONS = { robot: '🤖', art: '🎨' }
   JIRA_REGEX = /([A-Z]*-[0-9]*)(:|\ )/
+  NO_REVIEWS_MESSAGE = '@here No pending reviews! 💋 💋 💋'
 
   def initialize
     @gitlab = GitLab.new
@@ -12,11 +13,6 @@ class Nagger
   def run!
     todo = get_todo(get_merge_requests)
     message = get_message(todo)
-
-    if !message
-      $stdout << "No pending reviews\n"
-      return
-    end
 
     $stdout << "Notifying #%s about pending reviews\n" % [
       AppConfig::SLACK_CHANNEL
@@ -60,7 +56,7 @@ class Nagger
   end
 
   def get_message(todo)
-    return if todo.empty?
+    return NO_REVIEWS_MESSAGE if todo.empty?
 
     message = '@here *TODOs*'
 
