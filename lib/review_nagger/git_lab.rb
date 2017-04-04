@@ -9,9 +9,13 @@ class GitLab
   }
 
   def merge_requests
-    self.class
-      .get('/projects/%s/merge_requests' % project_id, OPTIONS)
-      .parsed_response
+    path = '/projects/%s/merge_requests?state=%s&per_page=%s' % [
+      project_id,
+      :opened,
+      100
+    ]
+
+    self.class.get(path, OPTIONS).parsed_response
   end
 
   def labels_include?(labels, needle)
@@ -52,9 +56,6 @@ class GitLab
 
       # In review
       x &&= review?(merge_request)
-
-      # Not already merged or closed
-      x &&= !%w[merged closed].include?(merge_request['state'])
 
       x
     end
