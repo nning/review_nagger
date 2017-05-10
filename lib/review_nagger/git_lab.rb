@@ -38,8 +38,12 @@ class GitLab
     labels_include?(merge_request['labels'], 'wip')
   end
 
+  def code_review_only?(merge_request)
+    labels_include?(merge_request['labels'], 'code review only')
+  end
+
   def necessary_votes(merge_request)
-    integration?(merge_request) ? 1 : 2
+    code_review_only?(merge_request) ? 1 : 2
   end
 
   def filtered_merge_requests
